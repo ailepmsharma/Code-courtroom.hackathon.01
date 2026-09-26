@@ -7,8 +7,10 @@ const InputPanel = ({ code, onCodeChange, onSubmit, onLoadSample, isSubmitting, 
   const [attemptFeedback, setAttemptFeedback] = useState('')
   const [sampleFeedback, setSampleFeedback] = useState('')
   const [sampleHighlight, setSampleHighlight] = useState('')
+  const [submitFeedback, setSubmitFeedback] = useState('')
   const attemptTimeoutRef = useRef(null)
   const sampleFeedbackTimeoutRef = useRef(null)
+  const submitFeedbackTimeoutRef = useRef(null)
   const lineCount = code.trim() ? code.split(/\r\n|\r|\n/).length : 0
   const detectedLanguage = detectLanguage(code)
   const selectedLanguage = languageOptions.find((option) => option.value === language) ?? languageOptions[0]
@@ -19,6 +21,7 @@ const InputPanel = ({ code, onCodeChange, onSubmit, onLoadSample, isSubmitting, 
   useEffect(() => () => {
     window.clearTimeout(attemptTimeoutRef.current)
     window.clearTimeout(sampleFeedbackTimeoutRef.current)
+    window.clearTimeout(submitFeedbackTimeoutRef.current)
   }, [])
 
   const handleEmptyAttempt = () => {
@@ -63,6 +66,18 @@ const InputPanel = ({ code, onCodeChange, onSubmit, onLoadSample, isSubmitting, 
       setSampleFeedback('')
       setSampleHighlight('')
     }, 1800)
+  }
+
+  const handleSubmitClick = (event) => {
+    if (!isValid) {
+      event.preventDefault()
+      handleEmptyAttempt()
+      return
+    }
+
+    setSubmitFeedback((current) => (current === 'commit-a' ? 'commit-b' : 'commit-a'))
+    window.clearTimeout(submitFeedbackTimeoutRef.current)
+    submitFeedbackTimeoutRef.current = window.setTimeout(() => setSubmitFeedback(''), 240)
   }
 
   return (
@@ -168,7 +183,7 @@ const InputPanel = ({ code, onCodeChange, onSubmit, onLoadSample, isSubmitting, 
       <div className="submit-row">
         <button
           type="submit"
-          className={`primary-button ${attemptFeedback}`}
+          className={`primary-button ${attemptFeedback} ${submitFeedback}`}
           disabled={isSubmitting}
           aria-disabled={!isValid || isSubmitting}
           aria-describedby={!isValid ? 'code-empty-hint' : undefined}
@@ -177,14 +192,12 @@ const InputPanel = ({ code, onCodeChange, onSubmit, onLoadSample, isSubmitting, 
               setShowEmptyHint(true)
             }
           }}
-          onClick={(event) => {
-            if (!isValid) {
-              event.preventDefault()
-              handleEmptyAttempt()
-            }
-          }}
+          onClick={handleSubmitClick}
         >
-          {isSubmitting ? 'Reviewing evidence...' : 'Put It On Trial ⚖️'}
+          <svg className="trial-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">
+            <path d="M20 6v24M11 11h18M20 9l-8 13m8-13 8 13M8 22h8c-.5 3.2-2 5-4 5s-3.5-1.8-4-5Zm16 0h8c-.5 3.2-2 5-4 5s-3.5-1.8-4-5ZM14 33h12M17 30h6" />
+          </svg>
+          <span>{isSubmitting ? 'Reviewing evidence...' : 'Put It On Trial'}</span>
         </button>
       </div>
     </form>
